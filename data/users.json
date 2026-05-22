@@ -1,0 +1,19 @@
+[
+  {
+    "id": "763826c0",
+    "name": "John Updated",
+    "email": "john@example.com",
+    "createdAt": "2026-05-22T08:43:43.543Z"
+  },
+  {
+    "id": "d538a908",
+    "name": "Jane",
+    "createdAt": "2026-05-22T08:43:43.577Z"
+  },
+  {
+    "id": "c411b518",
+    "name": "John Updated",
+    "email": "john@example.com",
+    "createdAt": "2026-05-22T08:44:05.052Z"
+  }
+]
