@@ -14,18 +14,20 @@
 6. [Understanding the User Management API](#understanding-the-user-management-api)
 7. [Database & Data Storage](#database--data-storage)
 8. [API Endpoints](#api-endpoints)
-9. [Making Requests from Frontend](#making-requests-from-frontend)
-10. [Proxy Forwarding & Configuration](#proxy-forwarding--configuration)
-11. [Testing](#testing)
-12. [Common Patterns & Comparisons](#common-patterns--comparisons)
-13. [Notes Module with TypeORM & MySQL](#notes-module-with-typeorm--mysql)
-14. [Next Steps](#next-steps)
+9. [Microservices Architecture](#microservices-architecture)
+10. [Orders Module & Notifications Microservice](#orders-module--notifications-microservice)
+11. [Making Requests from Frontend](#making-requests-from-frontend)
+12. [Proxy Forwarding & Configuration](#proxy-forwarding--configuration)
+13. [Testing](#testing)
+14. [Common Patterns & Comparisons](#common-patterns--comparisons)
+15. [Notes Module with TypeORM & MySQL](#notes-module-with-typeorm--mysql)
+16. [Next Steps](#next-steps)
 
 ---
 
 ## Project Overview
 
-This project demonstrates two approaches to backend development with NestJS:
+This project demonstrates multiple approaches to backend development with NestJS:
 
 **1. Users Module (JSON File Storage)**
 
@@ -41,16 +43,34 @@ This project demonstrates two approaches to backend development with NestJS:
 - Production-ready approach
 - REST API: `/notes` endpoints
 
+**3. Orders Module (In-Memory + Event-Driven)**
+
+- Order management system
+- HTTP REST API + Microservice message handlers
+- Demonstrates microservices communication patterns
+- REST API: `/orders` endpoints
+
+**4. Notifications Microservice (TCP-Based)**
+
+- Event-driven notification system
+- Standalone microservice running on separate port
+- Listens for order events and creates notifications
+- Can be run independently or embedded
+- REST API: `/notifications` endpoints
+
 **Key Features:**
 
-- ✅ Two database approaches (file-based & relational)
-- ✅ RESTful API endpoints for both modules
+- ✅ Three data storage approaches (file-based, relational DB, in-memory)
+- ✅ RESTful API endpoints for all modules
+- ✅ Microservices architecture with TCP transport
+- ✅ Event-driven architecture for service communication
 - ✅ Comprehensive unit and E2E tests
 - ✅ Type-safe with TypeScript
 - ✅ Clean architecture with Controllers, Services, and DTOs
 - ✅ Production-ready error handling
 - ✅ Environment-based configuration
-- ✅ Detailed code comments for learning
+- ✅ Detailed code comments and JSDoc for learning
+- ✅ Docker support for containerization
 
 ---
 
@@ -1258,6 +1278,323 @@ export class NoteListComponent {
 - Ensure MySQL is running: `mysql -u root -p`
 - Verify `.env` configuration
 - Run: `pnpm run test:e2e` after starting the application
+
+---
+
+## Microservices Architecture
+
+### What are Microservices?
+
+**Microservices** is an architectural pattern where a large application is split into smaller, independent services that communicate with each other. Each service handles a specific business capability.
+
+### Why Microservices?
+
+| Aspect          | Traditional Monolith       | Microservices               |
+| --------------- | -------------------------- | --------------------------- |
+| **Scaling**     | Scale entire app           | Scale individual services   |
+| **Deployment**  | Deploy everything          | Deploy single service       |
+| **Technology**  | Same tech stack            | Different tech per service  |
+| **Failure**     | One bug crashes everything | Failure isolated to service |
+| **Development** | Single team                | Multiple independent teams  |
+
+### Microservices in This Project
+
+```
+┌─────────────────────────────────────────┐
+│     Main Application (Port 3000)        │
+├─────────────────────────────────────────┤
+│  • Users Module (HTTP REST)             │
+│  • Notes Module (HTTP REST)             │
+│  • Orders Module (HTTP REST + Events)   │
+│  • Notifications Module (HTTP REST)     │
+└────────────┬────────────────────────────┘
+             │
+             │ TCP Connection
+             │ (Inter-service communication)
+             │
+     ┌───────▼────────┐
+     │ Notifications  │
+     │ Microservice   │
+     │ (Port 3001)    │
+     └────────────────┘
+```
+
+### Service-to-Service Communication
+
+In this project, services communicate using **message patterns**:
+
+```typescript
+// Service A sends a message
+await this.microserviceClient.emitNotificationEvent(
+  'order_created',  // Pattern name
+  {                 // Data payload
+    orderId: 1,
+    userId: 1,
+    productName: 'Laptop'
+  }
+);
+
+// Service B listens for message
+@MessagePattern('order_created')
+handleOrderCreated(data: { orderId: number; userId: number; productName: string }) {
+  // Process the event
+  return this.notificationsService.handleOrderCreated(data);
+}
+```
+
+### Transport Mechanisms
+
+**TCP (Transmission Control Protocol)** - What We Use
+
+```
+┌──────────────────┐
+│   Main App       │
+│   (Port 3000)    │
+└────────┬─────────┘
+         │
+         │ TCP Connection
+         │ localhost:3001
+         │
+┌────────▼─────────┐
+│  Notifications   │
+│  Service         │
+└──────────────────┘
+```
+
+**Advantages:**
+
+- ✅ Direct point-to-point communication
+- ✅ Fast for local networks
+- ✅ Simple to set up
+- ✅ No extra infrastructure needed
+
+**Limitations:**
+
+- ❌ Not ideal for distributed systems
+- ❌ Both services must be running
+- ❌ No message queue/persistence
+
+**For Production:** Consider **RabbitMQ**, **Kafka**, or **Redis**
+
+---
+
+## Orders Module & Notifications Microservice
+
+### Orders Module
+
+The Orders Module handles order creation, retrieval, and status management. It demonstrates how to build a microservice-ready module with both HTTP and event-based communication.
+
+#### Features
+
+- ✅ Create orders with user and product info
+- ✅ Retrieve orders by ID or user
+- ✅ Update order status
+- ✅ Emit events when orders change
+- ✅ Message handlers for inter-service communication
+
+#### Key Files
+
+| File                              | Purpose                           |
+| --------------------------------- | --------------------------------- |
+| `src/orders/orders.service.ts`    | Business logic for orders         |
+| `src/orders/orders.controller.ts` | HTTP endpoints + message handlers |
+| `src/orders/order.entity.ts`      | Order data model with JSDoc       |
+| `src/orders/create-order.dto.ts`  | Request validation DTO            |
+| `src/orders/orders.module.ts`     | Module definition                 |
+
+#### API Endpoints
+
+```
+POST   /orders                    # Create new order
+GET    /orders                    # List all orders
+GET    /orders/:id                # Get order by ID
+GET    /orders/user/:userId       # Get user's orders
+```
+
+#### Data Model
+
+```typescript
+/**
+ * Order Entity
+ * Represents an order in the system
+ */
+export class Order {
+  /** Unique identifier for the order */
+  id: number;
+
+  /** User ID who placed the order */
+  userId: number;
+
+  /** Name/description of the product */
+  productName: string;
+
+  /** Quantity of items in the order */
+  quantity: number;
+
+  /** Price per unit */
+  price: number;
+
+  /** Timestamp when the order was created */
+  createdAt: Date;
+
+  /** Current status: pending | completed | cancelled */
+  status: 'pending' | 'completed' | 'cancelled';
+}
+```
+
+### Notifications Microservice
+
+The Notifications Microservice is a **standalone service** that listens for order events and creates notifications. It demonstrates how to build an independent microservice that communicates with the main application.
+
+#### Features
+
+- ✅ Listens for order events from main app
+- ✅ Creates notifications for users
+- ✅ Can be run independently
+- ✅ HTTP endpoints for accessing notifications
+- ✅ Message handlers for receiving events
+
+#### Key Files
+
+| File                                                              | Purpose                  |
+| ----------------------------------------------------------------- | ------------------------ |
+| `src/notifications/notifications.service.ts`                      | Business logic           |
+| `src/notifications/notifications.controller.ts`                   | HTTP + message handlers  |
+| `src/notifications/notification.interface.ts`                     | NotificationEvent model  |
+| `src/notifications/notifications.module.ts`                       | Module definition        |
+| `apps/notifications-service/main.ts`                              | Microservice entry point |
+| `apps/notifications-service/notifications-microservice.module.ts` | Root module              |
+
+#### API Endpoints
+
+```
+GET    /notifications                  # List all notifications
+GET    /notifications/user/:userId     # Get user notifications
+```
+
+#### Message Patterns Supported
+
+| Pattern             | Purpose                  |
+| ------------------- | ------------------------ |
+| `order_created`     | User placed new order    |
+| `order_completed`   | Order was completed      |
+| `order_cancelled`   | Order was cancelled      |
+| `get_notifications` | Query user notifications |
+
+### Running the Microservices
+
+#### Option 1: Run Everything Together
+
+```bash
+# Start main app (includes Orders + Notifications modules)
+pnpm run start:dev
+
+# Server runs on port 3000
+```
+
+#### Option 2: Run with Standalone Microservice
+
+**Terminal 1: Main App**
+
+```bash
+pnpm run start:dev
+# Runs on port 3000
+```
+
+**Terminal 2: Notifications Microservice**
+
+```bash
+npx ts-node apps/notifications-service/main.ts
+# Runs on port 3001
+```
+
+### Example: Order Creation Flow
+
+1. **User sends HTTP request**
+
+   ```bash
+   POST /example/create-order-with-notification
+   {
+     "userId": 1,
+     "productName": "Laptop",
+     "quantity": 1,
+     "price": 999
+   }
+   ```
+
+2. **Main App processes request**
+   - OrdersController receives POST request
+   - OrdersService creates order object
+   - Order saved to in-memory storage
+
+3. **Main App emits event**
+
+   ```typescript
+   await this.microserviceClient.notifyOrderCreated(
+     orderId,
+     userId,
+     productName,
+   );
+   ```
+
+4. **Notifications Microservice receives event**
+   - TCP receives `order_created` message
+   - `handleOrderCreated()` handler processes it
+   - NotificationsService creates notification
+
+5. **Notification stored**
+
+   ```json
+   {
+     "orderId": 1,
+     "userId": 1,
+     "message": "Your order for Laptop has been created successfully!",
+     "type": "order_created",
+     "timestamp": "2026-06-04T10:30:00Z"
+   }
+   ```
+
+6. **Response returned to client**
+   ```json
+   {
+     "success": true,
+     "message": "Order created and notification sent",
+     "data": {
+       /* order object */
+     }
+   }
+   ```
+
+### Testing Microservices
+
+Use ThunderClient or Postman:
+
+**Create order with notification:**
+
+```
+POST http://localhost:3000/example/create-order-with-notification
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "productName": "Laptop",
+  "quantity": 1,
+  "price": 999
+}
+```
+
+**Get user notifications:**
+
+```
+GET http://localhost:3000/notifications/user/1
+```
+
+**Watch console output:**
+
+- Main App console: See order creation and event emission
+- Microservice console: See notification creation
+
+For detailed testing examples, see [MICROSERVICES-TESTING.md](./MICROSERVICES-TESTING.md)
 
 ---
 

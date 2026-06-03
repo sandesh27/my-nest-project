@@ -41,6 +41,61 @@ pnpm run start:prod
 
 Server will be available at: **http://localhost:3000**
 
+### Running Microservices
+
+#### Option 1: Embedded Microservices (Recommended for Development)
+
+```bash
+# Start main app - includes Orders and Notifications modules
+pnpm run start:dev
+```
+
+Both Orders and Notifications modules will be available:
+
+- Orders API: `http://localhost:3000/orders`
+- Notifications API: `http://localhost:3000/notifications`
+
+#### Option 2: Standalone Microservice (Advanced)
+
+**Terminal 1: Start main application**
+
+```bash
+pnpm run start:dev
+# Runs on port 3000
+```
+
+**Terminal 2: Start notifications microservice**
+
+```bash
+npx ts-node apps/notifications-service/main.ts
+# Runs on port 3001
+```
+
+When both are running, the main app will communicate with the notifications microservice via TCP.
+
+### Docker Support
+
+Run everything in containers:
+
+```bash
+# Build images
+docker-compose build
+
+# Start all services
+docker-compose up
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+```
+
+Services will be available at:
+
+- Main App: `http://localhost:3000`
+- Notifications Microservice: `localhost:3001` (TCP)
+
 ### Testing
 
 ```bash
@@ -75,9 +130,34 @@ pnpm run test:e2e
 - **PATCH** `/notes/:id` - Update note
 - **DELETE** `/notes/:id` - Delete note
 
+### Orders Module (In-Memory + Microservices)
+
+- **POST** `/orders` - Create new order
+- **GET** `/orders` - Get all orders
+- **GET** `/orders/:id` - Get order by ID
+- **GET** `/orders/user/:userId` - Get user's orders
+
+### Notifications Module (Event-Driven)
+
+- **GET** `/notifications` - Get all notifications
+- **GET** `/notifications/user/:userId` - Get user notifications
+
+### Example Integration Endpoints
+
+These demonstrate microservices communication:
+
+- **POST** `/example/create-order-with-notification` - Create order and send notification
+- **POST** `/example/complete-order/:orderId` - Complete order and notify user
+- **POST** `/example/cancel-order/:orderId` - Cancel order and notify user
+- **GET** `/example/user-notifications/:userId` - Query notifications from microservice
+- **POST** `/example/send-custom-event` - Send custom event
+- **POST** `/example/send-custom-request` - Send custom request
+
 ## Testing with Postman/Curl
 
-### Create a User
+### Users Module
+
+#### Create a User
 
 ```bash
 curl -X POST http://localhost:3000/users \
@@ -85,13 +165,15 @@ curl -X POST http://localhost:3000/users \
   -d '{"name":"John Doe","email":"john@example.com"}'
 ```
 
-### Get All Users
+#### Get All Users
 
 ```bash
 curl http://localhost:3000/users
 ```
 
-### Create a Note (requires MySQL)
+### Notes Module
+
+#### Create a Note (requires MySQL)
 
 ```bash
 curl -X POST http://localhost:3000/notes \
@@ -99,13 +181,110 @@ curl -X POST http://localhost:3000/notes \
   -d '{"title":"My Note","content":"Note content here"}'
 ```
 
-### Get All Notes
+#### Get All Notes
 
 ```bash
 curl http://localhost:3000/notes
 ```
 
+### Orders Module
+
+#### Create an Order
+
+```bash
+curl -X POST http://localhost:3000/orders \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": 1,
+    "productName": "Laptop",
+    "quantity": 1,
+    "price": 999.99
+  }'
+```
+
+#### Get All Orders
+
+```bash
+curl http://localhost:3000/orders
+```
+
+#### Get Orders by User
+
+```bash
+curl http://localhost:3000/orders/user/1
+```
+
+### Notifications Module
+
+#### Get All Notifications
+
+```bash
+curl http://localhost:3000/notifications
+```
+
+#### Get User Notifications
+
+```bash
+curl http://localhost:3000/notifications/user/1
+```
+
+### Microservices Integration Examples
+
+#### Create Order with Notification
+
+```bash
+curl -X POST http://localhost:3000/example/create-order-with-notification \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": 1,
+    "productName": "MacBook Pro",
+    "quantity": 1,
+    "price": 1999.99
+  }'
+```
+
+Watch the console output:
+
+- **Main App Console**: Order creation and event emission logs
+- **Microservice Console**: Notification creation logs (if microservice is running)
+
+#### Complete Order
+
+```bash
+curl -X POST http://localhost:3000/example/complete-order/1
+```
+
+#### Get User Notifications
+
+```bash
+curl http://localhost:3000/example/user-notifications/1
+```
+
 ## MySQL Setup
+
+### Database Schema
+
+The `nest_db` database includes three main tables:
+
+#### `notes` Table
+
+- **Purpose:** Stores user notes
+- **Columns:** id, title, content, createdAt, updatedAt
+- **Status:** Using MySQL with TypeORM
+
+#### `orders` Table
+
+- **Purpose:** Stores customer orders
+- **Columns:** id, userId, productName, quantity, price, status (pending/completed/cancelled), createdAt, updatedAt
+- **Status:** In-memory storage (ready for database integration)
+- **Module:** `src/orders/`
+
+#### `notifications` Table
+
+- **Purpose:** Stores user notifications linked to orders
+- **Columns:** id, orderId, userId, message, type (order_created/order_completed/order_cancelled), isRead, createdAt, updatedAt
+- **Status:** In-memory storage (ready for database integration)
+- **Module:** `src/notifications/`
 
 ### 1. Start MySQL Server
 
@@ -148,16 +327,29 @@ DB_NAME=nest_db
 NODE_ENV=development
 ```
 
-### 4. Create Database (Manual)
+### 4. Create Database and Tables
 
-If the database isn't created automatically:
+**Option A: Using MySQL CLI**
+
+```bash
+# Import the database schema
+mysql -u root -p nest_db < db/Dump20260522.sql
+```
+
+**Option B: Manual (if database exists)**
 
 ```bash
 mysql -u root -p
 # Inside MySQL:
 CREATE DATABASE nest_db;
+USE nest_db;
+# Then copy and paste the table creation statements from db/Dump20260522.sql
 exit
 ```
+
+**Option C: Auto-import on app startup**
+
+The database will be automatically created when you run the app (if configured). Ensure `.env` has correct MySQL credentials.
 
 ## Project Structure
 
@@ -181,15 +373,40 @@ src/
 │   ├── notes.module.ts       # Feature module
 │   └── notes.service.spec.ts # Unit tests
 │
+├── orders/                   # Orders module (Microservice, in-memory)
+│   ├── order.entity.ts       # Order data model
+│   ├── create-order.dto.ts   # Order creation DTO
+│   ├── orders.service.ts     # Business logic + message handlers
+│   ├── orders.controller.ts  # HTTP endpoints + message patterns
+│   └── orders.module.ts      # Feature module
+│
+├── notifications/            # Notifications module (Microservice, event-driven)
+│   ├── notification.interface.ts  # Notification data model
+│   ├── notifications.service.ts   # Business logic
+│   ├── notifications.controller.ts # HTTP endpoints + event listeners
+│   └── notifications.module.ts    # Feature module
+│
+├── common/                   # Shared services
+│   └── microservice-client.service.ts  # TCP client for inter-service communication
+│
 ├── app.controller.ts
 ├── app.service.ts
-├── app.module.ts             # Root module (database config)
+├── app.module.ts             # Root module (all imports + config)
 └── main.ts                   # Entry point
+
+apps/
+└── notifications-service/    # Standalone notifications microservice
+    ├── main.ts               # Bootstrap entry point (runs on port 3001)
+    └── notifications-microservice.module.ts
 
 test/
 ├── users.e2e-spec.ts         # E2E tests for Users API
 ├── notes.e2e-spec.ts         # E2E tests for Notes API (MySQL)
-└── app.e2e-spec.ts
+├── app.e2e-spec.ts
+└── ...
+
+db/
+└── Dump20260522.sql          # MySQL database schema (notes, orders, notifications tables)
 
 data/
 └── users.json                # User data (auto-created)

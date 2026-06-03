@@ -19,7 +19,32 @@ import { NotificationsMicroserviceModule } from './notifications-microservice.mo
  *    - 'get_notifications'
  * 3. Process events and send notifications
  */
-async function bootstrap() {
+
+/**
+ * Bootstrap the notifications microservice
+ *
+ * Creates and starts a NestJS microservice that:
+ * - Runs independently from the main application
+ * - Listens on localhost:3001 using TCP transport
+ * - Handles all notification-related message patterns
+ * - Provides request-reply messaging for querying notifications
+ * - Handles errors gracefully with process exit code on failure
+ *
+ * @returns {Promise<void>} Resolves when the service is listening
+ *
+ * @throws {Error} Logs error and exits with code 1 if startup fails
+ *
+ * @example
+ * // In terminal:
+ * npx ts-node apps/notifications-service/main.ts
+ * // Output: 🔔 Notifications Microservice is listening on port 3001...
+ *
+ * @remarks
+ * Environment: Requires NestJS and @nestjs/microservices installed
+ * Port: Uses TCP port 3001 (ensure port is available)
+ * Module: Imports NotificationsMicroserviceModule with all required providers
+ */
+async function bootstrap(): Promise<void> {
   try {
     const app = await NestFactory.createMicroservice<MicroserviceOptions>(
       NotificationsMicroserviceModule,
