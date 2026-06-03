@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  # Main Application
+  main-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nest-main-app
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      - notifications-service
+    networks:
+      - microservices-network
+    command: npm run start:dev
+
+  # Notifications Microservice
+  notifications-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: notifications-microservice
+    ports:
+      - '3001:3001'
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - .:/app
+      - /app/node_modules
+    networks:
+      - microservices-network
+    command: npx ts-node apps/notifications-service/main.ts
+
+networks:
+  microservices-network:
+    driver: bridge

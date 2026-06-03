@@ -5,7 +5,11 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { NotesModule } from './notes/notes.module';
+import { OrdersModule } from './orders/orders.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { ExampleMicroservicesController } from './example-microservices-integration.controller';
 import { Note } from './notes/note.entity';
+import { MicroserviceClientService } from './common/microservice-client.service';
 
 /**
  * AppModule
@@ -71,8 +75,10 @@ import { Note } from './notes/note.entity';
     }),
     UsersModule,
     NotesModule,
+    OrdersModule,
+    NotificationsModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [AppController, ExampleMicroservicesController],
+  providers: [AppService, MicroserviceClientService],
 })
 export class AppModule {}
