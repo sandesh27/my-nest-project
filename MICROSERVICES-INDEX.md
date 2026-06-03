@@ -356,11 +356,15 @@ DELETE /notes/:id          Delete note
 }
 ```
 
-### Add Database
+### Database Integration
 
-- Replace in-memory arrays with actual database
-- Use TypeORM (already configured)
-- Add entities to `TypeOrmModule`
+✅ **COMPLETED** - Both Orders and Notifications now use MySQL database storage:
+
+- **orders.entity.ts** - TypeORM entity mapping order data to database
+- **notification.entity.ts** - TypeORM entity mapping notification data to database
+- **orders.service.ts** - Uses `Repository<Order>` for database operations
+- **notifications.service.ts** - Uses `Repository<Notification>` for database operations
+- **app.module.ts** - Both entities registered in TypeOrmModule configuration
 
 ---
 
@@ -370,27 +374,29 @@ DELETE /notes/:id          Delete note
 
 **orders.service.ts**
 
-- In-memory order storage
-- CRUD operations for orders
-- Order status management
-- Replace with database in production
+- Uses TypeORM Repository for MySQL database storage
+- All methods are async and interact with database
+- CRUD operations for orders persisted to database
+- Order status management in database
 
 **orders.controller.ts**
 
-- HTTP endpoints for order API
+- HTTP endpoints for order API (async/await)
 - `@MessagePattern` handlers for service-to-service communication
 - Response formatting and error handling
 
 **notifications.service.ts**
 
-- In-memory notification storage
-- Event processing methods
-- Notification creation and querying
+- Uses TypeORM Repository for MySQL database storage
+- All methods are async and interact with database
+- Event processing methods with persistence
+- Notification creation and querying from database
 
 **notifications.controller.ts**
 
-- HTTP endpoints for notifications API
+- HTTP endpoints for notifications API (async/await)
 - `@MessagePattern` handlers for receiving events
+- Notifications persisted to database
 
 **microservice-client.service.ts**
 

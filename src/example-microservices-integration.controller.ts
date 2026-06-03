@@ -14,6 +14,25 @@ import { Controller, Post, Body, Get, Param } from '@nestjs/common';
 import { MicroserviceClientService } from '../src/common/microservice-client.service';
 
 /**
+ * Generic response interfaces
+ */
+interface ApiResponse {
+  success: boolean;
+  message: string;
+  data?: any;
+  result?: any;
+  error?: string;
+}
+
+interface OrderQueryResponse {
+  success: boolean;
+  userId?: number;
+  message?: string;
+  notifications?: any[];
+  error?: string;
+}
+
+/**
  * Example Controller showing Microservices Integration
  * This demonstrates best practices for calling microservices
  */
@@ -65,7 +84,7 @@ export class ExampleMicroservicesController {
       quantity: number;
       price: number;
     },
-  ): Promise<object> {
+  ): Promise<ApiResponse> {
     try {
       // Step 1: Create the order (in a real app, save to database)
       const orderId = Math.floor(Math.random() * 10000);
@@ -122,7 +141,7 @@ export class ExampleMicroservicesController {
    * }
    */
   @Post('complete-order/:orderId')
-  async completeOrder(@Param('orderId') orderId: string): Promise<object> {
+  async completeOrder(@Param('orderId') orderId: string): Promise<ApiResponse> {
     try {
       const id = parseInt(orderId);
 
@@ -177,7 +196,9 @@ export class ExampleMicroservicesController {
    * }
    */
   @Get('user-notifications/:userId')
-  async getUserNotifications(@Param('userId') userId: string): Promise<object> {
+  async getUserNotifications(
+    @Param('userId') userId: string,
+  ): Promise<OrderQueryResponse> {
     try {
       const id = parseInt(userId);
 
@@ -188,7 +209,7 @@ export class ExampleMicroservicesController {
       return {
         success: true,
         userId: id,
-        notifications: result,
+        notifications: (result?.data || result) as any[],
       };
     } catch (error) {
       console.error('❌ Error fetching notifications:', error);
@@ -217,7 +238,7 @@ export class ExampleMicroservicesController {
    * }
    */
   @Post('cancel-order/:orderId')
-  async cancelOrder(@Param('orderId') orderId: string): Promise<object> {
+  async cancelOrder(@Param('orderId') orderId: string): Promise<ApiResponse> {
     try {
       const id = parseInt(orderId);
 
@@ -273,7 +294,7 @@ export class ExampleMicroservicesController {
   @Post('send-custom-event')
   async sendCustomEvent(
     @Body() body: { pattern: string; payload: Record<string, unknown> },
-  ): Promise<object> {
+  ): Promise<ApiResponse> {
     try {
       // You can emit any custom event to any microservice
       await this.microserviceClient.emitNotificationEvent(
@@ -324,7 +345,7 @@ export class ExampleMicroservicesController {
   @Post('send-custom-request')
   async sendCustomRequest(
     @Body() body: { pattern: string; payload: Record<string, unknown> },
-  ): Promise<object> {
+  ): Promise<ApiResponse> {
     try {
       // Send a request and wait for response
       const result = await this.microserviceClient.sendToNotificationService(

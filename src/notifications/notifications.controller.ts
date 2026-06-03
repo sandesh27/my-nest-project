@@ -1,24 +1,24 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { MessagePattern } from '@nestjs/microservices';
 import { NotificationsService } from './notifications.service';
-import { NotificationEvent } from './notification.interface';
+import { Notification } from './notification.entity';
 
 /**
  * Response interfaces for type safety
  */
 interface NotificationDataResponse {
-  data: NotificationEvent[];
+  data: Notification[];
 }
 
 interface NotificationHandlerResponse {
   success: boolean;
   message: string;
-  data: NotificationEvent;
+  data: Notification;
 }
 
 interface NotificationsQueryResponse {
   success: boolean;
-  data: NotificationEvent[];
+  data: Notification[];
 }
 
 /**
@@ -35,19 +35,19 @@ export class NotificationsController {
    * Returns all notifications across all users in the system
    * GET /notifications
    *
-   * @returns {Object} Object with data property containing array of all notifications
+   * @returns {Promise<NotificationDataResponse>} Promise resolving to object with data property containing array of all notifications
    * @example
    * GET /notifications
    * Response: {
    *   "data": [
-   *     {"orderId": 1, "userId": 1, "message": "Order created", "type": "order_created", "timestamp": "2024-01-15T10:30:00Z"}
+   *     {"id": 1, "orderId": 1, "userId": 1, "message": "Order created", "type": "order_created", "createdAt": "2024-01-15T10:30:00Z"}
    *   ]
    * }
    */
   @Get()
-  getAllNotifications(): object {
+  async getAllNotifications(): Promise<NotificationDataResponse> {
     return {
-      data: this.notificationsService.getAllNotifications(),
+      data: await this.notificationsService.getAllNotifications(),
     };
   }
 
@@ -57,19 +57,23 @@ export class NotificationsController {
    * GET /notifications/user/:userId
    *
    * @param {string} userId - The user ID to fetch notifications for
-   * @returns {Object} Object with data property containing array of user's notifications
+   * @returns {Promise<NotificationDataResponse>} Promise resolving to object with data property containing array of user's notifications
    * @example
    * GET /notifications/user/1
    * Response: {
    *   "data": [
-   *     {"orderId": 1, "userId": 1, "message": "Order created", "type": "order_created", "timestamp": "2024-01-15T10:30:00Z"}
+   *     {"id": 1, "orderId": 1, "userId": 1, "message": "Order created", "type": "order_created", "createdAt": "2024-01-15T10:30:00Z"}
    *   ]
    * }
    */
   @Get('user/:userId')
-  getUserNotifications(@Param('userId') userId: string): object {
+  async getUserNotifications(
+    @Param('userId') userId: string,
+  ): Promise<NotificationDataResponse> {
     return {
-      data: this.notificationsService.getUserNotifications(parseInt(userId)),
+      data: await this.notificationsService.getUserNotifications(
+        parseInt(userId),
+      ),
     };
   }
 
@@ -82,7 +86,7 @@ export class NotificationsController {
    * @param {number} data.orderId - The created order ID
    * @param {number} data.userId - The user who created the order
    * @param {string} data.productName - Name of the ordered product
-   * @returns {Object} Response object with success status and created notification
+   * @returns {Promise<NotificationHandlerResponse>} Promise resolving to response object with success status and created notification
    *
    * @example
    * Message Pattern 'order_created'
@@ -90,16 +94,17 @@ export class NotificationsController {
    * Response: {
    *   "success": true,
    *   "message": "Notification sent",
-   *   "data": {"orderId": 1, "userId": 1, "message": "Your order for Laptop has been created", "type": "order_created"}
+   *   "data": {"id": 1, "orderId": 1, "userId": 1, "message": "Your order for Laptop has been created", "type": "order_created"}
    * }
    */
   @MessagePattern('order_created')
-  handleOrderCreated(data: {
+  async handleOrderCreated(data: {
     orderId: number;
     userId: number;
     productName: string;
-  }): object {
-    const notification = this.notificationsService.handleOrderCreated(data);
+  }): Promise<NotificationHandlerResponse> {
+    const notification =
+      await this.notificationsService.handleOrderCreated(data);
     return {
       success: true,
       message: 'Notification sent',
@@ -115,11 +120,15 @@ export class NotificationsController {
    * @param {Object} data - Event data
    * @param {number} data.orderId - The completed order ID
    * @param {number} data.userId - The user who placed the order
-   * @returns {Object} Response object with success status and created notification
+   * @returns {Promise<NotificationHandlerResponse>} Promise resolving to response object with success status and created notification
    */
   @MessagePattern('order_completed')
-  handleOrderCompleted(data: { orderId: number; userId: number }): object {
-    const notification = this.notificationsService.handleOrderCompleted(data);
+  async handleOrderCompleted(data: {
+    orderId: number;
+    userId: number;
+  }): Promise<NotificationHandlerResponse> {
+    const notification =
+      await this.notificationsService.handleOrderCompleted(data);
     return {
       success: true,
       message: 'Notification sent',
@@ -135,11 +144,15 @@ export class NotificationsController {
    * @param {Object} data - Event data
    * @param {number} data.orderId - The cancelled order ID
    * @param {number} data.userId - The user who placed the order
-   * @returns {Object} Response object with success status and created notification
+   * @returns {Promise<NotificationHandlerResponse>} Promise resolving to response object with success status and created notification
    */
   @MessagePattern('order_cancelled')
-  handleOrderCancelled(data: { orderId: number; userId: number }): object {
-    const notification = this.notificationsService.handleOrderCancelled(data);
+  async handleOrderCancelled(data: {
+    orderId: number;
+    userId: number;
+  }): Promise<NotificationHandlerResponse> {
+    const notification =
+      await this.notificationsService.handleOrderCancelled(data);
     return {
       success: true,
       message: 'Notification sent',
@@ -154,7 +167,7 @@ export class NotificationsController {
    *
    * @param {Object} data - Query data
    * @param {number} data.userId - The user ID to fetch notifications for
-   * @returns {Object} Response object with success status and array of notifications
+   * @returns {Promise<NotificationsQueryResponse>} Promise resolving to response object with success status and array of notifications
    *
    * @example
    * Message Pattern 'get_notifications'
@@ -162,13 +175,15 @@ export class NotificationsController {
    * Response: {
    *   "success": true,
    *   "data": [
-   *     {"orderId": 1, "userId": 1, "message": "Order created", "type": "order_created"}
+   *     {"id": 1, "orderId": 1, "userId": 1, "message": "Order created", "type": "order_created"}
    *   ]
    * }
    */
   @MessagePattern('get_notifications')
-  handleGetNotifications(data: { userId: number }): object {
-    const notifications = this.notificationsService.getUserNotifications(
+  async handleGetNotifications(data: {
+    userId: number;
+  }): Promise<NotificationsQueryResponse> {
+    const notifications = await this.notificationsService.getUserNotifications(
       data.userId,
     );
     return {

@@ -194,7 +194,7 @@ Event 'order_created' sent successfully: undefined
    ```
 
 2. **Main App Processing:**
-   - Creates order in memory/database
+   - Creates order and saves to MySQL database via Repository
    - Extracts order details (orderId, userId, productName)
    - Calls `microserviceClient.notifyOrderCreated()`
 
@@ -305,7 +305,7 @@ Event 'order_created' sent successfully: undefined
 ## Next Steps
 
 1. **Add RabbitMQ:** Replace TCP with RabbitMQ for production-grade message queuing
-2. **Add Database:** Replace in-memory arrays with actual database storage
+2. ✅ **Database Integration:** Orders and Notifications now use MySQL with TypeORM
 3. **Add Authentication:** Secure microservice communication
 4. **Add Error Handling:** Implement retry logic and circuit breakers
 5. **Add Logging:** Integrate Winston or Pino for structured logging

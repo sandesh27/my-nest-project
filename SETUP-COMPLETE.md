@@ -179,17 +179,17 @@ POST   /example/send-custom-request
    ↓
 2. OrdersController receives POST /orders
    ↓
-3. OrdersService creates order in memory
+3. OrdersService creates order and saves to MySQL database
    ↓
 4. MicroserviceClient emits 'order_created' event via TCP
    ↓
 5. Notifications Microservice receives event on port 3001
    ↓
-6. NotificationsService creates notification
+6. NotificationsService creates notification and saves to MySQL database
    ↓
 7. Returns success to user
    ↓
-8. User can query notifications from another endpoint
+8. User can query notifications from database via another endpoint
 ```
 
 **All happens in milliseconds! ⚡**
@@ -263,12 +263,12 @@ POST   /example/send-custom-request
 **`src/orders/orders.service.ts`**
 
 - Manages order creation, retrieval, and status updates
-- In-memory storage (replace with database)
-- 200+ lines of well-commented code
+- ✅ MySQL database storage via TypeORM Repository
+- 100+ lines of well-commented code
 
 **`src/orders/orders.controller.ts`**
 
-- HTTP REST endpoints for orders
+- HTTP REST endpoints for orders (async/await)
 - Message pattern handlers for microservice communication
 - Shows both HTTP and messaging patterns
 
@@ -276,11 +276,11 @@ POST   /example/send-custom-request
 
 - Manages notification creation and storage
 - Event handlers for order events
-- In-memory storage (replace with database)
+- ✅ MySQL database storage via TypeORM Repository
 
 **`src/notifications/notifications.controller.ts`**
 
-- HTTP REST endpoints for notifications
+- HTTP REST endpoints for notifications (async/await)
 - Message pattern handlers for receiving events
 - Query and emission capabilities
 
@@ -318,7 +318,7 @@ POST   /example/send-custom-request
 - **Main App:** Port 3000 (HTTP)
 - **Notifications Service:** Port 3001 (TCP)
 - **Transport:** TCP (direct connection)
-- **Storage:** In-memory (change to database)
+- **Storage:** ✅ MySQL with TypeORM (Orders, Notifications, Notes)
 
 ### How to Change Transport (to RabbitMQ)
 

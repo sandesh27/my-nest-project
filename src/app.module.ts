@@ -9,6 +9,8 @@ import { OrdersModule } from './orders/orders.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ExampleMicroservicesController } from './example-microservices-integration.controller';
 import { Note } from './notes/note.entity';
+import { Order } from './orders/order.entity';
+import { Notification } from './notifications/notification.entity';
 import { MicroserviceClientService } from './common/microservice-client.service';
 
 /**
@@ -68,7 +70,7 @@ import { MicroserviceClientService } from './common/microservice-client.service'
         username: configService.get('DB_USERNAME', 'root'),
         password: configService.get('DB_PASSWORD', ''),
         database: configService.get('DB_NAME', 'nest_db'),
-        entities: [Note],
+        entities: [Note, Order, Notification],
         synchronize: configService.get('NODE_ENV') !== 'production',
         logging: false,
       }),

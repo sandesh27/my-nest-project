@@ -7,6 +7,17 @@ import {
 import { firstValueFrom } from 'rxjs';
 
 /**
+ * Microservice response interface
+ * Provides type-safe responses from microservice operations
+ */
+interface MicroserviceResponse<T = unknown> {
+  success?: boolean;
+  message?: string;
+  data?: T;
+  error?: string;
+}
+
+/**
  * Microservice Client Service
  * Provides methods for communicating with other microservices
  * This service acts as a bridge between the main app and standalone microservices
@@ -49,7 +60,7 @@ export class MicroserviceClientService implements OnModuleDestroy {
   async emitNotificationEvent(
     pattern: string,
     payload: Record<string, unknown>,
-  ): Promise<any> {
+  ): Promise<MicroserviceResponse> {
     try {
       const result = await firstValueFrom(
         this.notificationsClient.emit(pattern, payload),
@@ -81,7 +92,7 @@ export class MicroserviceClientService implements OnModuleDestroy {
   async sendToNotificationService(
     pattern: string,
     payload: Record<string, unknown>,
-  ): Promise<any> {
+  ): Promise<MicroserviceResponse> {
     try {
       const result = await firstValueFrom(
         this.notificationsClient.send(pattern, payload),
@@ -107,13 +118,13 @@ export class MicroserviceClientService implements OnModuleDestroy {
    * @param {number} orderId - Unique order identifier
    * @param {number} userId - User who placed the order
    * @param {string} productName - Name of the product ordered
-   * @returns {Promise<any>} Result from microservice
+   * @returns {Promise<MicroserviceResponse>} Result from microservice
    */
   async notifyOrderCreated(
     orderId: number,
     userId: number,
     productName: string,
-  ): Promise<any> {
+  ): Promise<MicroserviceResponse> {
     return this.emitNotificationEvent('order_created', {
       orderId,
       userId,
@@ -127,9 +138,12 @@ export class MicroserviceClientService implements OnModuleDestroy {
    *
    * @param {number} orderId - ID of the completed order
    * @param {number} userId - User who should receive notification
-   * @returns {Promise<any>} Result from microservice
+   * @returns {Promise<MicroserviceResponse>} Result from microservice
    */
-  async notifyOrderCompleted(orderId: number, userId: number): Promise<any> {
+  async notifyOrderCompleted(
+    orderId: number,
+    userId: number,
+  ): Promise<MicroserviceResponse> {
     return this.emitNotificationEvent('order_completed', {
       orderId,
       userId,
@@ -142,9 +156,12 @@ export class MicroserviceClientService implements OnModuleDestroy {
    *
    * @param {number} orderId - ID of the cancelled order
    * @param {number} userId - User who should receive notification
-   * @returns {Promise<any>} Result from microservice
+   * @returns {Promise<MicroserviceResponse>} Result from microservice
    */
-  async notifyOrderCancelled(orderId: number, userId: number): Promise<any> {
+  async notifyOrderCancelled(
+    orderId: number,
+    userId: number,
+  ): Promise<MicroserviceResponse> {
     return this.emitNotificationEvent('order_cancelled', {
       orderId,
       userId,
@@ -161,7 +178,7 @@ export class MicroserviceClientService implements OnModuleDestroy {
    * @example
    * const userNotifications = await this.getNotifications(1);
    */
-  async getNotifications(userId: number): Promise<any> {
+  async getNotifications(userId: number): Promise<MicroserviceResponse> {
     return this.sendToNotificationService('get_notifications', { userId });
   }
 

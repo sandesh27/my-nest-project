@@ -2,6 +2,28 @@ import { Controller, Post, Get, Param, Body } from '@nestjs/common';
 import { MessagePattern } from '@nestjs/microservices';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './create-order.dto';
+import { Order } from './order.entity';
+
+/**
+ * Response interfaces for type safety
+ */
+interface OrderCreateResponse {
+  message: string;
+  data: Order;
+}
+
+interface OrdersListResponse {
+  data: Order[];
+}
+
+interface OrderDetailResponse {
+  data: Order | { message: string };
+}
+
+interface OrderHandlerResponse {
+  success: boolean;
+  data?: Order | undefined;
+}
 
 /**
  * OrdersController
@@ -18,7 +40,7 @@ export class OrdersController {
    * POST /orders
    *
    * @param {CreateOrderDto} createOrderDto - Order creation data
-   * @returns {Object} Object with success message and created order data
+   * @returns {Promise<OrderCreateResponse>} Promise resolving to object with success message and created order data
    *
    * @example
    * POST /orders
@@ -43,8 +65,10 @@ export class OrdersController {
    * }
    */
   @Post()
-  create(@Body() createOrderDto: CreateOrderDto): object {
-    const order = this.ordersService.createOrder(createOrderDto);
+  async create(
+    @Body() createOrderDto: CreateOrderDto,
+  ): Promise<OrderCreateResponse> {
+    const order = await this.ordersService.createOrder(createOrderDto);
     return {
       message: 'Order created successfully',
       data: order,
@@ -56,7 +80,7 @@ export class OrdersController {
    * Retrieves all orders in the system
    * GET /orders
    *
-   * @returns {Object} Object with data property containing array of all orders
+   * @returns {Promise<OrdersListResponse>} Promise resolving to object with data property containing array of all orders
    *
    * @example
    * GET /orders
@@ -68,9 +92,9 @@ export class OrdersController {
    * }
    */
   @Get()
-  getAllOrders(): object {
+  async getAllOrders(): Promise<OrdersListResponse> {
     return {
-      data: this.ordersService.getAllOrders(),
+      data: await this.ordersService.getAllOrders(),
     };
   }
 
@@ -80,7 +104,7 @@ export class OrdersController {
    * GET /orders/:id
    *
    * @param {string} id - The order ID
-   * @returns {Object} Object with data property containing the order or not found message
+   * @returns {Promise<OrderDetailResponse>} Promise resolving to object with data property containing the order or not found message
    *
    * @example
    * GET /orders/1
@@ -96,8 +120,8 @@ export class OrdersController {
    * }
    */
   @Get(':id')
-  getOrderById(@Param('id') id: string): object {
-    const order = this.ordersService.getOrderById(parseInt(id));
+  async getOrderById(@Param('id') id: string): Promise<OrderDetailResponse> {
+    const order = await this.ordersService.getOrderById(parseInt(id));
     return {
       data: order || { message: 'Order not found' },
     };
@@ -109,7 +133,7 @@ export class OrdersController {
    * GET /orders/user/:userId
    *
    * @param {string} userId - The user ID to filter orders by
-   * @returns {Object} Object with data property containing array of user's orders
+   * @returns {Promise<OrdersListResponse>} Promise resolving to object with data property containing array of user's orders
    *
    * @example
    * GET /orders/user/1
@@ -121,9 +145,11 @@ export class OrdersController {
    * }
    */
   @Get('user/:userId')
-  getOrdersByUserId(@Param('userId') userId: string): object {
+  async getOrdersByUserId(
+    @Param('userId') userId: string,
+  ): Promise<OrdersListResponse> {
     return {
-      data: this.ordersService.getOrdersByUserId(parseInt(userId)),
+      data: await this.ordersService.getOrdersByUserId(parseInt(userId)),
     };
   }
 
@@ -136,7 +162,7 @@ export class OrdersController {
    * @param {Object} data - Message data
    * @param {number} data.orderId - The order ID to update
    * @param {string} data.status - The new status ('pending' | 'completed' | 'cancelled')
-   * @returns {Object} Object with success flag and updated order data
+   * @returns {Promise<OrderHandlerResponse>} Promise resolving to object with success flag and updated order data
    *
    * @example
    * Message Pattern 'update_order_status'
@@ -147,14 +173,17 @@ export class OrdersController {
    * }
    */
   @MessagePattern('update_order_status')
-  handleUpdateOrderStatus(data: { orderId: number; status: string }): object {
-    const updatedOrder = this.ordersService.updateOrderStatus(
+  async handleUpdateOrderStatus(data: {
+    orderId: number;
+    status: string;
+  }): Promise<OrderHandlerResponse> {
+    const updatedOrder = await this.ordersService.updateOrderStatus(
       data.orderId,
       data.status as 'pending' | 'completed' | 'cancelled',
     );
     return {
       success: !!updatedOrder,
-      data: updatedOrder,
+      data: updatedOrder || undefined,
     };
   }
 
@@ -165,7 +194,7 @@ export class OrdersController {
    *
    * @param {Object} data - Message data
    * @param {number} data.orderId - The order ID to retrieve
-   * @returns {Object} Object with success flag and order data
+   * @returns {Promise<OrderHandlerResponse>} Promise resolving to object with success flag and order data
    *
    * @example
    * Message Pattern 'get_order'
@@ -176,11 +205,13 @@ export class OrdersController {
    * }
    */
   @MessagePattern('get_order')
-  handleGetOrder(data: { orderId: number }): object {
-    const order = this.ordersService.getOrderById(data.orderId);
+  async handleGetOrder(data: {
+    orderId: number;
+  }): Promise<OrderHandlerResponse> {
+    const order = await this.ordersService.getOrderById(data.orderId);
     return {
       success: !!order,
-      data: order,
+      data: order || undefined,
     };
   }
 }

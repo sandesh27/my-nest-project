@@ -130,7 +130,7 @@ pnpm run test:e2e
 - **PATCH** `/notes/:id` - Update note
 - **DELETE** `/notes/:id` - Delete note
 
-### Orders Module (In-Memory + Microservices)
+### Orders Module (MySQL + TypeORM + Microservices)
 
 - **POST** `/orders` - Create new order
 - **GET** `/orders` - Get all orders
@@ -276,14 +276,14 @@ The `nest_db` database includes three main tables:
 
 - **Purpose:** Stores customer orders
 - **Columns:** id, userId, productName, quantity, price, status (pending/completed/cancelled), createdAt, updatedAt
-- **Status:** In-memory storage (ready for database integration)
+- **Status:** ✅ MySQL database storage with TypeORM
 - **Module:** `src/orders/`
 
 #### `notifications` Table
 
 - **Purpose:** Stores user notifications linked to orders
 - **Columns:** id, orderId, userId, message, type (order_created/order_completed/order_cancelled), isRead, createdAt, updatedAt
-- **Status:** In-memory storage (ready for database integration)
+- **Status:** ✅ MySQL database storage with TypeORM
 - **Module:** `src/notifications/`
 
 ### 1. Start MySQL Server
@@ -373,7 +373,7 @@ src/
 │   ├── notes.module.ts       # Feature module
 │   └── notes.service.spec.ts # Unit tests
 │
-├── orders/                   # Orders module (Microservice, in-memory)
+├── orders/                   # Orders module (Microservice with MySQL database)
 │   ├── order.entity.ts       # Order data model
 │   ├── create-order.dto.ts   # Order creation DTO
 │   ├── orders.service.ts     # Business logic + message handlers

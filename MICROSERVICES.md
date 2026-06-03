@@ -42,15 +42,15 @@ src/
 │   └── microservice-client.service.ts    # Client for communicating with microservices
 ├── orders/                              # Orders feature module
 │   ├── create-order.dto.ts
-│   ├── order.entity.ts
+│   ├── order.entity.ts                  # TypeORM entity for MySQL storage
 │   ├── orders.controller.ts
-│   ├── orders.module.ts
-│   └── orders.service.ts
+│   ├── orders.module.ts                 # Imports TypeOrmModule.forFeature([Order])
+│   └── orders.service.ts                # Uses Repository<Order> for database access
 ├── notifications/                       # Notifications feature module (also in main app)
-│   ├── notification.interface.ts
+│   ├── notification.entity.ts           # TypeORM entity for MySQL storage
 │   ├── notifications.controller.ts
-│   ├── notifications.module.ts
-│   └── notifications.service.ts
+│   ├── notifications.module.ts          # Imports TypeOrmModule.forFeature([Notification])
+│   └── notifications.service.ts         # Uses Repository<Notification> for database access
 ├── users/                               # Users feature module
 │   └── ...
 ├── notes/                               # Notes feature module

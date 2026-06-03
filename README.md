@@ -43,24 +43,26 @@ This project demonstrates multiple approaches to backend development with NestJS
 - Production-ready approach
 - REST API: `/notes` endpoints
 
-**3. Orders Module (In-Memory + Event-Driven)**
+**3. Orders Module (MySQL + TypeORM + Event-Driven)**
 
-- Order management system
+- Order management system with persistent database storage
 - HTTP REST API + Microservice message handlers
-- Demonstrates microservices communication patterns
+- MySQL database for order records
+- TypeORM repository pattern for data access
 - REST API: `/orders` endpoints
 
-**4. Notifications Microservice (TCP-Based)**
+**4. Notifications Microservice (MySQL + TypeORM + TCP-Based)**
 
-- Event-driven notification system
+- Event-driven notification system with persistent storage
 - Standalone microservice running on separate port
 - Listens for order events and creates notifications
+- MySQL database for notification records
 - Can be run independently or embedded
 - REST API: `/notifications` endpoints
 
 **Key Features:**
 
-- ✅ Three data storage approaches (file-based, relational DB, in-memory)
+- ✅ Three data storage approaches (file-based, relational DB, both with MySQL persistence)
 - ✅ RESTful API endpoints for all modules
 - ✅ Microservices architecture with TCP transport
 - ✅ Event-driven architecture for service communication
@@ -1525,7 +1527,7 @@ npx ts-node apps/notifications-service/main.ts
 2. **Main App processes request**
    - OrdersController receives POST request
    - OrdersService creates order object
-   - Order saved to in-memory storage
+   - Order saved to MySQL database via TypeORM Repository
 
 3. **Main App emits event**
 
